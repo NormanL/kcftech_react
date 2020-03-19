@@ -7,14 +7,35 @@ function Corporations() {
         { id: 3, name: "Google", icon: "google.png" }
     ];
 
+    type Corporation = {
+        id: number;
+        name: string;
+        icon: string;
+    };
+
+    function renderCorp(corp: Corporation) {
+        return (
+            <tr>
+                <td>{corp.id}</td>
+                <td>{corp.name}</td>
+                <td>{corp.icon}</td>
+            </tr>
+        );
+    }
+
     return (
         <>
             <h1>Corporations</h1>
-            <ul>
-                {corporations.map(corp => {
-                    return <li>{corp.name}</li>;
-                })}
-            </ul>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Icon</th>
+                    </tr>
+                </thead>
+                <tbody>{corporations.map(renderCorp)}</tbody>
+            </table>
         </>
     );
 }
