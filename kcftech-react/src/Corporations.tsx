@@ -1,31 +1,54 @@
 import React, { useState, useEffect } from "react";
-import { getCorporations } from "./api/corporations";
+import {
+    getCorporations,
+    deleteCorporation,
+    addCorporation
+} from "./api/corporationsApi";
 
-type Corporation = {
-    id: number;
+declare type CorporationRequest = {
     name: string;
     icon: string;
+    [index: string]: string;
 };
 
 function Corporations() {
-    // const [corporations, setCorporations] = useState<Array<Corporation>>([]);
+    // Must put this in state because we want React to redraw the screen when this data changes.
     const [corporations, setCorporations] = useState<Corporation[]>([]);
+    const [corporation, setCorporation] = useState<CorporationRequest>({
+        name: "",
+        icon: ""
+    });
 
-    // This runs by default after every render.
+    // This runs by default as every render.
     useEffect(() => {
         async function loadCorporations() {
             const corps = await getCorporations();
             setCorporations(corps);
         }
         loadCorporations();
-    }, []); // Second arg (empty array) is the dependency array - specifies when this effect should re-run
+        // 2nd arg is the dependency array. It specifies when this effect should re-run
+    }, []);
 
-    function onDeleteClick(id: number) {
-        const newCorps = corporations.filter(corp => corp.id !== id);
-        setCorporations(newCorps);
+    async function onDeleteClick(id: Number) {
+        await deleteCorporation(id);
+        const newCorporations = corporations.filter(corp => corp.id !== id);
+        setCorporations(newCorporations);
     }
 
-    function renderCorp(corp: Corporation) {
+    function onAddCorporation(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault(); // Prevent the form from posting back to the server.
+        // addCorporation(event);
+    }
+
+    function onChange(event: React.ChangeEvent<HTMLInputElement>) {
+        const newCorp = { ...corporation };
+        newCorp[event.target.id] = event.target.value;
+        setCorporation(newCorp);
+    }
+
+    // In React, HTML is a projection of app state
+    // NOT a source of truth.
+    function renderCorporation(corp: Corporation) {
         return (
             <tr key={corp.id}>
                 <td>
@@ -55,8 +78,35 @@ function Corporations() {
                         <th>Icon</th>
                     </tr>
                 </thead>
-                <tbody>{corporations.map(renderCorp)}</tbody>
+                <tbody>{corporations.map(renderCorporation)}</tbody>
             </table>
+
+            <section>
+                <h2>Add User</h2>
+                <form onSubmit={onAddCorporation}>
+                    <div>
+                        <label htmlFor="name">
+                            Name
+                            <br />
+                            <input
+                                type="text"
+                                name="name"
+                                id="name"
+                                onChange={onChange}
+                            ></input>
+                        </label>
+                    </div>
+
+                    <div>
+                        <label htmlFor="icon">
+                            Icon
+                            <br />
+                            <input type="text" name="icon" id="icon"></input>
+                        </label>
+                    </div>
+                    <input type="submit" value="Add Corporation" />
+                </form>
+            </section>
         </>
     );
 }
