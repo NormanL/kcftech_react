@@ -4,26 +4,25 @@ import {
     deleteCorporation,
     addCorporation
 } from "./api/corporationsApi";
+import Spinner from "./shared/Spinner";
 
-declare type CorporationRequest = {
-    name: string;
-    icon: string;
-    [index: string]: string;
+const newCorp = {
+    name: "",
+    icon: ""
 };
 
 function Corporations() {
     // Must put this in state because we want React to redraw the screen when this data changes.
+    const [isLoading, setIsLoading] = useState(true);
     const [corporations, setCorporations] = useState<Corporation[]>([]);
-    const [corporation, setCorporation] = useState<CorporationRequest>({
-        name: "",
-        icon: ""
-    });
+    const [corporation, setCorporation] = useState<CorporationRequest>(newCorp);
 
     // This runs by default as every render.
     useEffect(() => {
         async function loadCorporations() {
             const corps = await getCorporations();
             setCorporations(corps);
+            setIsLoading(false);
         }
         loadCorporations();
         // 2nd arg is the dependency array. It specifies when this effect should re-run
@@ -35,15 +34,18 @@ function Corporations() {
         setCorporations(newCorporations);
     }
 
-    function onAddCorporation(event: React.FormEvent<HTMLFormElement>) {
+    async function onAddCorporation(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault(); // Prevent the form from posting back to the server.
-        // addCorporation(event);
+        const savedCorporation = await addCorporation(corporation);
+        setCorporations([...corporations, savedCorporation]);
+        setCorporation(newCorp); // Reset the form
     }
 
     function onChange(event: React.ChangeEvent<HTMLInputElement>) {
-        const newCorp = { ...corporation };
-        newCorp[event.target.id] = event.target.value;
-        setCorporation(newCorp);
+        setCorporation({
+            ...corporation,
+            [event.target.id]: event.target.value
+        });
     }
 
     // In React, HTML is a projection of app state
@@ -53,7 +55,7 @@ function Corporations() {
             <tr key={corp.id}>
                 <td>
                     <button
-                        aria-label={`Delete ${corp.name} with ID ${corp.id}`}
+                        aria-label={`Delete ${corp.name}`}
                         onClick={() => onDeleteClick(corp.id)}
                     >
                         Delete
@@ -66,9 +68,12 @@ function Corporations() {
         );
     }
 
-    return (
-        <>
-            <h1>Corporations</h1>
+    function renderTable() {
+        if (isLoading) {
+            return <Spinner />;
+        }
+
+        return (
             <table>
                 <thead>
                     <tr>
@@ -80,33 +85,38 @@ function Corporations() {
                 </thead>
                 <tbody>{corporations.map(renderCorporation)}</tbody>
             </table>
+        );
+    }
 
+    return (
+        <>
+            <h1>Corporations</h1>
             <section>
                 <h2>Add User</h2>
                 <form onSubmit={onAddCorporation}>
                     <div>
-                        <label htmlFor="name">
-                            Name
-                            <br />
-                            <input
-                                type="text"
-                                name="name"
-                                id="name"
-                                onChange={onChange}
-                            ></input>
-                        </label>
+                        <label htmlFor="name">Name</label>
+                        <br />
+                        <input
+                            id="name"
+                            value={corporation.name}
+                            onChange={onChange}
+                        />
                     </div>
-
                     <div>
-                        <label htmlFor="icon">
-                            Icon
-                            <br />
-                            <input type="text" name="icon" id="icon"></input>
-                        </label>
+                        <label htmlFor="icon">Icon</label>
+                        <br />
+                        <input
+                            id="icon"
+                            value={corporation.icon}
+                            onChange={onChange}
+                        />
                     </div>
                     <input type="submit" value="Add Corporation" />
                 </form>
             </section>
+
+            {renderTable()}
         </>
     );
 }
