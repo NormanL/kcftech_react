@@ -14,6 +14,7 @@ const newCorp = {
 function Corporations() {
     // Must put this in state because we want React to redraw the screen when this data changes.
     const [isLoading, setIsLoading] = useState(true);
+    const [isDeleting, setIsDeleting] = useState<Number[]>([]); // array of corp id's currently being deleted
     const [corporations, setCorporations] = useState<Corporation[]>([]);
     const [corporation, setCorporation] = useState<CorporationRequest>(newCorp);
 
@@ -29,9 +30,11 @@ function Corporations() {
     }, []);
 
     async function onDeleteClick(id: Number) {
+        setIsDeleting([...isDeleting, id]);
         await deleteCorporation(id);
         const newCorporations = corporations.filter(corp => corp.id !== id);
         setCorporations(newCorporations);
+        setIsDeleting(currentState => currentState.filter(v => v !== id));
     }
 
     async function onAddCorporation(event: React.FormEvent<HTMLFormElement>) {
@@ -51,14 +54,16 @@ function Corporations() {
     // In React, HTML is a projection of app state
     // NOT a source of truth.
     function renderCorporation(corp: Corporation) {
+        const deleteInProgress = isDeleting.some(v => v === corp.id);
         return (
             <tr key={corp.id}>
                 <td>
                     <button
+                        disabled={deleteInProgress}
                         aria-label={`Delete ${corp.name}`}
                         onClick={() => onDeleteClick(corp.id)}
                     >
-                        Delete
+                        Delete {deleteInProgress && <Spinner size="small" />}
                     </button>
                 </td>
                 <td>{corp.id}</td>
@@ -70,7 +75,7 @@ function Corporations() {
 
     function renderTable() {
         if (isLoading) {
-            return <Spinner />;
+            return <Spinner size="large" />;
         }
 
         return (
